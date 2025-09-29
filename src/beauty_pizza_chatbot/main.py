@@ -6,12 +6,11 @@ import time
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Carregar variáveis de ambiente
 env_path = Path(__file__).parent.parent.parent / '.env'
 if env_path.exists():
     load_dotenv(env_path)
 else:
-    load_dotenv()  # Carrega .env padrão se existir
+    load_dotenv()  
 
 from beauty_pizza_chatbot import BeautyPizzaAgent
 
