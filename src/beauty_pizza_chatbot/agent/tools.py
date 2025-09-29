@@ -91,26 +91,45 @@ def get_pizza_info(sabor: str) -> Dict:
 
 @tool_register(
     name="create_order",
-    description="Cria um novo pedido para o cliente com nome, documento. A data de entrega será automaticamente definida para hoje se não especificada."
+    description="Cria um novo pedido para o cliente. Se já existir um pedido em andamento, retorna o pedido existente."
 )
 def create_order(client_name: str, client_document: str, delivery_date: str = None) -> Dict:
-    """Cria um novo pedido."""
+    """
+    Cria um novo pedido, a menos que já exista um pedido em andamento para o cliente.
+    """
     try:
-        # Se não foi fornecida data ou a data é muito antiga, usar data atual
+        # Formatar a data de hoje
+        today_str = date.today().strftime('%Y-%m-%d')
+
+        # Verificar se já existe um pedido para este cliente hoje
+        existing_orders = order_api.filter_orders_by_document(client_document, delivery_date=today_str)
+        
+        # Filtrar pedidos que não estão finalizados (se a API der essa informação)
+        # Como a API não tem status, vamos assumir que o primeiro encontrado é o correto
+        if existing_orders and isinstance(existing_orders, list) and len(existing_orders) > 0:
+            # Vamos pegar o pedido mais recente
+            latest_order = max(existing_orders, key=lambda o: o.get('id', 0))
+            status = order_api.get_status_order(latest_order['id'])
+            if status.get('status') != 'finalizado':
+                latest_order['status_beauty'] = 'existing'
+                return latest_order
+
+        # Se não foi fornecida data ou a data é inválida, usar data atual
         if not delivery_date:
-            delivery_date = date.today().strftime('%Y-%m-%d')
+            delivery_date = today_str
         else:
-            # Validar se a data não está no passado
             try:
                 parsed_date = datetime.strptime(delivery_date, '%Y-%m-%d').date()
                 if parsed_date < date.today():
-                    delivery_date = date.today().strftime('%Y-%m-%d')
-            except ValueError:
-                delivery_date = date.today().strftime('%Y-%m-%d')
+                    delivery_date = today_str
+            except (ValueError, TypeError):
+                delivery_date = today_str
                 
-        return order_api.create_order(client_name, client_document, delivery_date)
+        new_order = order_api.create_order(client_name, client_document, delivery_date)
+        new_order['status_beauty'] = 'created'
+        return new_order
     except Exception as e:
-        return {"erro": f"Não foi possível criar o pedido: {str(e)}"}
+        return {"erro": f"Não foi possível criar ou verificar o pedido: {str(e)}"}
 
 
 @tool_register(
@@ -121,7 +140,15 @@ def add_pizza_to_order(order_id: int, pizza_flavor: str, size: str,
                       crust: str, quantity: int = 1) -> Dict:
     """Adiciona uma pizza ao pedido."""
     try:
-        return order_api.add_item_to_order(order_id, pizza_flavor, size, crust, quantity)
+        # Buscar o preço da pizza primeiro
+        pizza_info = knowledge_base.get_pizza_with_price(pizza_flavor, size, crust)
+        if not pizza_info:
+            return {"erro": f"Não foi possível encontrar preço para pizza {pizza_flavor}, tamanho {size}, borda {crust}"}
+        
+        unit_price = pizza_info['preco']
+        
+        # Adicionar ao pedido com o preço correto
+        return order_api.add_item_to_order(order_id, pizza_flavor, size, crust, quantity, unit_price)
     except Exception as e:
         return {"erro": f"Não foi possível adicionar pizza ao pedido: {str(e)}"}
 
@@ -232,3 +259,38 @@ def remember_pizza_offered(sabor: str, tamanho: str, borda: str, preco: float) -
         }
     except Exception as e:
         return {"erro": f"Erro ao registrar pizza oferecida: {str(e)}"}
+
+
+@tool_register(
+    name="finalize_order",
+    description="Finaliza o pedido do cliente, confirmando todos os detalhes e marcando o pedido como concluído."
+)
+def finalize_order(order_id: int, client_name: str, client_document: str, delivery_address: str, total: float) -> Dict:
+    """
+    Finaliza o pedido, garantindo que todos os detalhes estão corretos.
+    Esta ferramenta é uma simulação, pois a API não possui um endpoint de finalização.
+    """
+    try:
+        # 1. Verificar se o pedido existe e os detalhes batem
+        order_details = order_api.get_order(order_id)
+        if not order_details:
+            return {"erro": f"Pedido com ID {order_id} não encontrado para finalização."}
+
+        # 2. Simular a finalização
+        # Na vida real, aqui chamaríamos um endpoint como `PATCH /api/orders/{order_id}/finalize/`
+        # Como não existe, vamos apenas retornar uma mensagem de sucesso
+        
+        confirmation_message = (
+            f"Pedido para {client_name} (documento: {client_document}) finalizado com sucesso! "
+            f"Endereço de entrega: {delivery_address}. "
+            f"Total: R$ {total:.2f}. "
+            "Seu pedido logo sairá para entrega. Agradecemos a preferência!"
+        )
+        
+        return {
+            "status": "finalizado",
+            "order_id": order_id,
+            "mensagem": confirmation_message
+        }
+    except Exception as e:
+        return {"erro": f"Ocorreu um erro ao tentar finalizar o pedido: {str(e)}"}

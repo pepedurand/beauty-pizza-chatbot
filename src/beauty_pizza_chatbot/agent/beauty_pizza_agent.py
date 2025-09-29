@@ -34,7 +34,8 @@ class BeautyPizzaAgent:
             "update_delivery_address",
             "remove_item_from_order",
             "update_item_quantity",
-            "remember_pizza_offered"
+            "remember_pizza_offered",
+            "finalize_order"
         ]
         
         self.system_prompt = dedent("""
@@ -65,6 +66,14 @@ class BeautyPizzaAgent:
             - NÃO reinicie a conversa - continue de onde parou
             - Use o histórico para manter continuidade
 
+            FLUXO DE FINALIZAÇÃO DE PEDIDO:
+            - Quando o cliente confirmar que está tudo certo para finalizar, NÃO crie um novo pedido.
+            - Em vez disso, use a ferramenta `finalize_order`.
+            - Para usar `finalize_order`, você vai precisar de: `order_id`, `client_name`, `client_document`, `delivery_address` e `total`.
+            - Reúna essas informações do contexto da conversa e do estado do pedido antes de chamar a ferramenta.
+            - Se alguma informação estiver faltando, peça educadamente ao cliente.
+            - NUNCA chame `create_order` se um pedido já foi criado e está em andamento. Verifique o `current_order_id` no estado.
+
             INFORMAÇÕES IMPORTANTES:
             - A pizzaria se chama "Beauty Pizza"
             - Você tem acesso ao cardápio completo via ferramentas
@@ -74,11 +83,11 @@ class BeautyPizzaAgent:
 
             FLUXO DE CONTINUIDADE:
             1. Se ofereceu uma pizza com preço E o cliente confirma interesse → prosseguir com o pedido
-            2. Se cliente quer fazer pedido → coletar dados (nome, documento) e criar pedido
+            2. Se cliente quer fazer pedido → coletar dados (nome, documento) e criar pedido com `create_order`. Se a ferramenta retornar um pedido existente, use-o.
             3. Adicionar a pizza já discutida ao pedido
             4. Perguntar se quer mais alguma coisa
             5. Coletar endereço de entrega
-            6. Finalizar pedido
+            6. Quando o cliente pedir para finalizar, confirme todos os detalhes (itens, endereço, total) e use a ferramenta `finalize_order`.
 
             Lembre-se: CONTEXTO É FUNDAMENTAL. Use o histórico e informações de contexto para manter a conversa fluida e natural.
         """)

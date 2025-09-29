@@ -86,7 +86,7 @@ class OrderAPI:
         return self._make_request('GET', f'/api/orders/{order_id}/')
     
     def add_item_to_order(self, order_id: int, pizza_flavor: str, 
-                         size: str, crust: str, quantity: int = 1) -> Dict:
+                         size: str, crust: str, quantity: int = 1, unit_price: float = 0.0) -> Dict:
         """
         Adiciona um item ao pedido.
         
@@ -96,17 +96,27 @@ class OrderAPI:
             size: Tamanho da pizza
             crust: Tipo de borda
             quantity: Quantidade
+            unit_price: Preço unitário do item
             
         Returns:
             Dados do item adicionado
         """
+        # Criar nome descritivo do item
+        item_name = f"Pizza {pizza_flavor} {size}"
+        if crust and crust.lower() != "tradicional":
+            item_name += f" - Borda {crust}"
+        
         item_data = {
-            'pizza_flavor': pizza_flavor,
-            'size': size,
-            'crust': crust,
-            'quantity': quantity
+            'name': item_name,
+            'quantity': quantity,
+            'unit_price': unit_price
         }
-        return self._make_request('POST', f'/api/orders/{order_id}/items/', item_data)
+        
+        data = {
+            'items': [item_data]
+        }
+        
+        return self._make_request('PATCH', f'/api/orders/{order_id}/add-items/', data)
     
     def get_order_total(self, order_id: int) -> Dict:
         """
@@ -195,3 +205,40 @@ class OrderAPI:
         # Não há endpoint específico para atualizar item individual
         # Seria necessário implementar via atualização do pedido completo
         return {"erro": "Endpoint de atualização de item individual não disponível na API"}
+    
+    def filter_orders_by_document(self, client_document: str, delivery_date: str = None) -> List[Dict]:
+        """
+        Filtra pedidos pelo documento do cliente.
+        
+        Args:
+            client_document: Documento do cliente
+            delivery_date: Data de entrega (opcional, formato YYYY-MM-DD)
+            
+        Returns:
+            Lista de pedidos do cliente
+        """
+        params = {'client_document': client_document}
+        if delivery_date:
+            params['delivery_date'] = delivery_date
+        
+        # Construir URL com parâmetros de query
+        query_string = '&'.join([f"{k}={v}" for k, v in params.items()])
+        endpoint = f'/api/orders/filter/?{query_string}'
+        
+        try:
+            return self._make_request('GET', endpoint)
+        except Exception as e:
+            return {"erro": f"Não foi possível filtrar pedidos: {str(e)}"}
+    
+    def get_status_order(self, order_id: int) -> Dict:
+        """
+        Recupera o status de um pedido.
+        
+        Args:
+            order_id: ID do pedido
+            
+        Returns:
+            Dados do pedido
+        """
+        order = self._make_request('GET', f'/api/orders/{order_id}/')
+        return {"status": order.get("status", "não encontrado")}
