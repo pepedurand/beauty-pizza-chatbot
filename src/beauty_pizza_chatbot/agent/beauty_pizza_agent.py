@@ -85,7 +85,7 @@ class BeautyPizzaAgent:
             model=self.model,
             tools=resolve_tools(self.available_tools),
             instructions=self.system_prompt,
-            show_tool_calls=True
+            show_tool_calls=False
         )
         
         self.conversation_state = {

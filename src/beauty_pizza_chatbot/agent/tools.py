@@ -13,7 +13,7 @@ def tool_register(name: str = None, description: str = None):
         wrapped_func = tool(
             name=key,
             description=description,
-            show_result=True, 
+            show_result=False, 
             stop_after_tool_call=False
         )(func)
 
