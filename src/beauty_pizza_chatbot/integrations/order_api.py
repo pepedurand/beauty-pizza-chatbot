@@ -1,8 +1,6 @@
 import os
 import requests
 from typing import Dict, List, Optional
-import json
-from datetime import datetime
 
 
 class OrderAPI:
@@ -92,24 +90,6 @@ class OrderAPI:
     
     def delete_order_item(self, order_id: int, item_id: int) -> Dict:
         return self._make_request('DELETE', f'/api/orders/{order_id}/items/{item_id}/')
-    
-    def update_order_item(self, order_id: int, item_id: int, 
-                         quantity: int) -> Dict:
-        """
-        Atualiza a quantidade de um item no pedido.
-        
-        Args:
-            order_id: ID do pedido
-            item_id: ID do item
-            quantity: Nova quantidade
-            
-        Returns:
-            Dados do item atualizado
-        """
-        data = {'quantity': quantity}
-        # Não há endpoint específico para atualizar item individual
-        # Seria necessário implementar via atualização do pedido completo
-        return {"erro": "Endpoint de atualização de item individual não disponível na API"}
     
     def filter_orders_by_document(self, client_document: str, delivery_date: str = None) -> List[Dict]:
         params = {'client_document': client_document}

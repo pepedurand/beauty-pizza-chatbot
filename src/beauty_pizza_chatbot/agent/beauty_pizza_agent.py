@@ -5,8 +5,6 @@ from .tools import resolve_tools
 
 
 class BeautyPizzaAgent:
-    """Agente da pizzaria Beauty Pizza usando Agno."""
-    
     def __init__(self, openai_api_key: str):
         self.model = OpenAIChat(
             id="gpt-4o-mini",
@@ -120,7 +118,6 @@ class BeautyPizzaAgent:
             return error_msg
     
     def _build_full_context(self, message: str) -> str:
-        """Constrói contexto completo incluindo histórico e estado atual."""
         context_parts = []
         
         history = self.conversation_state["conversation_history"]
@@ -146,7 +143,6 @@ class BeautyPizzaAgent:
         return "\n".join(context_parts)
 
     def _extract_context_from_response(self, user_message: str, agent_response: str):
-        """Extrai informações importantes da resposta para manter contexto."""
         user_lower = user_message.lower()
         
         if any(word in user_lower for word in ["quero", "vou querer", "sim", "ok", "fazer pedido"]):
@@ -154,7 +150,6 @@ class BeautyPizzaAgent:
                 self.conversation_state["current_step"] = "confirming_order"
     
     def reset_conversation(self):
-        """Reinicia o estado da conversa."""
         self.conversation_state = {
             "current_order_id": None,
             "client_name": None,

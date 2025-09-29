@@ -1,6 +1,5 @@
-from textwrap import dedent
 from agno.tools import tool
-from typing import List, Dict, Optional
+from typing import List, Dict
 from datetime import datetime, date
 from beauty_pizza_chatbot.integrations import OrderAPI, KnowledgeBase
 
@@ -201,17 +200,6 @@ def remove_item_from_order(order_id: int, item_id: int) -> Dict:
         return order_api.delete_order_item(order_id, item_id)
     except Exception as e:
         return {"erro": f"Não foi possível remover item do pedido: {str(e)}"}
-
-
-@tool_register(
-    name="update_item_quantity",
-    description="Atualiza a quantidade de um item específico no pedido"
-)
-def update_item_quantity(order_id: int, item_id: int, quantity: int) -> Dict:
-    try:
-        return order_api.update_order_item(order_id, item_id, quantity)
-    except Exception as e:
-        return {"erro": f"Não foi possível atualizar quantidade do item: {str(e)}"}
 
 
 @tool_register(

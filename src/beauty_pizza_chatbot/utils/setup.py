@@ -1,4 +1,3 @@
-"""Utilitários para o Beauty Pizza Chatbot."""
 
 import os
 import sqlite3
