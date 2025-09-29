@@ -82,7 +82,7 @@ class BeautyPizzaAgent:
         4. Adicionar a pizza já discutida ao pedido
         5. Perguntar se quer mais alguma coisa
         6. Coletar endereço de entrega
-        7. Quando o cliente pedir para finalizar, confirme todos os detalhes (itens, endereço, total) e use a ferramenta finalize_order.
+        7.Quando o cliente pedir para finalizar, confirme todos os detalhes (itens, endereço, total) e use a ferramenta finalize_order.
         
         Lembre-se: CONTEXTO É FUNDAMENTAL.
         Use o histórico e informações de contexto para manter a conversa fluida e natural.
@@ -151,10 +151,11 @@ class BeautyPizzaAgent:
 
     def _extract_context_from_response(self, user_message: str, agent_response: str):
         user_lower = user_message.lower()
-        
+
         if any(word in user_lower for word in ["quero", "vou querer", "sim", "ok", "fazer pedido"]):
             if self.conversation_state["pizza_in_consideration"]:
                 self.conversation_state["current_step"] = "confirming_order"
+                self.conversation_state["pizza_in_consideration"] = None
     
     def reset_conversation(self):
         self.conversation_state = {
@@ -166,4 +167,4 @@ class BeautyPizzaAgent:
             "pizza_in_consideration": None,
             "current_step": "greeting"
         }
-    
+

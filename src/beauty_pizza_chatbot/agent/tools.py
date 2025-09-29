@@ -90,8 +90,17 @@ def create_order(client_name: str, client_document: str, delivery_date: str = No
     try:
         today_str = date.today().strftime('%Y-%m-%d')
 
-        existing_orders = order_api.filter_orders_by_document(client_document, delivery_date=today_str)
-        
+        safe_delivery_date = today_str
+        if delivery_date:
+            try:
+                parsed_date = datetime.strptime(delivery_date, '%Y-%m-%d').date()
+                if parsed_date >= date.today():
+                    safe_delivery_date = parsed_date.strftime('%Y-%m-%d')
+            except (ValueError, TypeError):
+                pass
+
+        existing_orders = order_api.filter_orders_by_document(client_document, delivery_date=safe_delivery_date)
+
         if existing_orders and isinstance(existing_orders, list) and len(existing_orders) > 0:
             latest_order = max(existing_orders, key=lambda o: o.get('id', 0))
             status = order_api.get_status_order(latest_order['id'])
@@ -99,17 +108,7 @@ def create_order(client_name: str, client_document: str, delivery_date: str = No
                 latest_order['status_beauty'] = 'existing'
                 return latest_order
 
-        if not delivery_date:
-            delivery_date = today_str
-        else:
-            try:
-                parsed_date = datetime.strptime(delivery_date, '%Y-%m-%d').date()
-                if parsed_date < date.today():
-                    delivery_date = today_str
-            except (ValueError, TypeError):
-                delivery_date = today_str
-                
-        new_order = order_api.create_order(client_name, client_document, delivery_date)
+        new_order = order_api.create_order(client_name, client_document, safe_delivery_date)
         new_order['status_beauty'] = 'created'
         return new_order
     except Exception as e:
