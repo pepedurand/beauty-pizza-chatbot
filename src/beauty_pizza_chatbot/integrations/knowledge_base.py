@@ -5,21 +5,12 @@ from pathlib import Path
 
 
 class KnowledgeBase:
-    """Classe para acessar a base de conhecimento das pizzas no SQLite."""
     
     def __init__(self, db_path: Optional[str] = None):
-        """
-        Inicializa a conexão com a base de dados SQLite.
-        
-        Args:
-            db_path: Caminho para o arquivo do banco de dados.
-                     Se None, usa o caminho do .env ou o padrão.
-        """
         if db_path is None:
             db_path = os.getenv('SQLITE_DB_PATH', 
                               '../candidates-case-order-api/knowledge_base/knowledge_base.sql')
         
-        # Ajustar o caminho relativo se necessário
         if not os.path.isabs(db_path):
             current_dir = Path(__file__).parent.parent.parent.parent
             db_path = current_dir / db_path
@@ -28,16 +19,13 @@ class KnowledgeBase:
         self._init_database()
     
     def _init_database(self):
-        """Inicializa o banco de dados executando o script SQL se necessário."""
         db_dir = os.path.dirname(self.db_path)
         os.makedirs(db_dir, exist_ok=True)
         
-        # Se o arquivo tem extensão .sql, significa que é o script
         if self.db_path.endswith('.sql'):
             script_path = self.db_path
             self.db_path = self.db_path.replace('.sql', '.db')
             
-            # Se o .db não existe, cria executando o script
             if not os.path.exists(self.db_path):
                 with open(script_path, 'r', encoding='utf-8') as f:
                     sql_script = f.read()
@@ -47,7 +35,6 @@ class KnowledgeBase:
                 conn.close()
     
     def get_all_pizzas(self) -> List[Dict]:
-        """Retorna todas as pizzas disponíveis."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
@@ -70,7 +57,6 @@ class KnowledgeBase:
         return pizzas
     
     def get_pizza_by_flavor(self, sabor: str) -> Optional[Dict]:
-        """Retorna uma pizza específica pelo sabor."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
@@ -94,7 +80,6 @@ class KnowledgeBase:
         return None
     
     def get_sizes(self) -> List[Dict]:
-        """Retorna todos os tamanhos disponíveis."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
@@ -111,7 +96,6 @@ class KnowledgeBase:
         return sizes
     
     def get_crusts(self) -> List[Dict]:
-        """Retorna todos os tipos de borda disponíveis."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
@@ -128,7 +112,6 @@ class KnowledgeBase:
         return crusts
     
     def get_price(self, pizza_id: int, tamanho_id: int, borda_id: int) -> Optional[float]:
-        """Retorna o preço de uma pizza específica."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         
@@ -144,7 +127,6 @@ class KnowledgeBase:
         return result[0] if result else None
     
     def get_pizza_with_price(self, sabor: str, tamanho: str, borda: str) -> Optional[Dict]:
-        """Retorna informações completas da pizza incluindo preço."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         

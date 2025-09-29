@@ -6,23 +6,18 @@ from pathlib import Path
 
 
 def setup_database():
-    """Configura o banco de dados SQLite a partir do script SQL."""
-    # Caminho para o script SQL
     sql_script_path = Path(__file__).parent.parent.parent / 'candidates-case-order-api' / 'knowledge_base' / 'knowledge_base.sql'
     
     if not sql_script_path.exists():
         print(f"❌ Script SQL não encontrado em: {sql_script_path}")
         return False
     
-    # Caminho para o banco de dados
     db_path = sql_script_path.with_suffix('.db')
     
     try:
-        # Ler o script SQL
         with open(sql_script_path, 'r', encoding='utf-8') as f:
             sql_script = f.read()
         
-        # Criar o banco de dados
         conn = sqlite3.connect(str(db_path))
         conn.executescript(sql_script)
         conn.close()
@@ -36,13 +31,11 @@ def setup_database():
 
 
 def test_api_connection():
-    """Testa a conexão com a Order API."""
     try:
         import requests
         
         api_url = os.getenv('ORDER_API_URL', 'http://localhost:8000')
         
-        # Tentar acessar a API
         response = requests.get(f"{api_url}/api/", timeout=5)
         
         if response.status_code == 200:
@@ -62,7 +55,6 @@ def test_api_connection():
 
 
 def validate_environment():
-    """Valida se todas as variáveis de ambiente necessárias estão configuradas."""
     required_vars = ['OPENAI_API_KEY']
     optional_vars = {
         'ORDER_API_URL': 'http://localhost:8000',
@@ -74,7 +66,6 @@ def validate_environment():
     
     all_good = True
     
-    # Verificar variáveis obrigatórias
     for var in required_vars:
         value = os.getenv(var)
         if not value:
@@ -83,7 +74,6 @@ def validate_environment():
         else:
             print(f"✅ {var} configurada")
     
-    # Verificar variáveis opcionais
     for var, default in optional_vars.items():
         value = os.getenv(var)
         if not value:

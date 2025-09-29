@@ -1,8 +1,6 @@
 from textwrap import dedent
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
-from typing import Dict, List, Optional
-
 from .tools import resolve_tools
 
 
@@ -10,19 +8,12 @@ class BeautyPizzaAgent:
     """Agente da pizzaria Beauty Pizza usando Agno."""
     
     def __init__(self, openai_api_key: str):
-        """
-        Inicializa o agente da Beauty Pizza.
-        
-        Args:
-            openai_api_key: Chave da API do OpenAI
-        """
         self.model = OpenAIChat(
             id="gpt-4o-mini",
             api_key=openai_api_key,
             temperature=0.7
         )
         
-        # Lista de ferramentas disponíveis para o agente
         self.available_tools = [
             "get_menu",
             "get_pizza_info", 
@@ -99,41 +90,27 @@ class BeautyPizzaAgent:
             show_tool_calls=True
         )
         
-        # Estado da conversa
         self.conversation_state = {
             "current_order_id": None,
             "client_name": None,
             "client_document": None,
             "delivery_address": None,
             "conversation_history": [],
-            "pizza_in_consideration": None,  # Pizza que o cliente está considerando
-            "current_step": "greeting"  # greeting, browsing, ordering, confirmation
+            "pizza_in_consideration": None,  
+            "current_step": "greeting"  
         }
     
     def chat(self, message: str) -> str:
-        """
-        Processa uma mensagem do cliente e retorna a resposta.
-        
-        Args:
-            message: Mensagem do cliente
-            
-        Returns:
-            Resposta do agente
-        """
         try:
-            # Construir contexto completo incluindo histórico
             full_context = self._build_full_context(message)
             
-            # Processar com o agente
             response = self.agent.run(full_context)
             
-            # Atualizar histórico
             self.conversation_state["conversation_history"].append({
                 "user": message,
                 "agent": response.content
             })
             
-            # Analisar resposta para extrair informações importantes
             self._extract_context_from_response(message, response.content)
             
             return response.content
@@ -146,7 +123,6 @@ class BeautyPizzaAgent:
         """Constrói contexto completo incluindo histórico e estado atual."""
         context_parts = []
         
-        # Adicionar histórico recente (últimas 6 mensagens)
         history = self.conversation_state["conversation_history"]
         if history:
             context_parts.append("\n[HISTÓRICO DA CONVERSA]")
@@ -155,7 +131,6 @@ class BeautyPizzaAgent:
                 context_parts.append(f"Cliente: {h['user']}")
                 context_parts.append(f"Bella: {h['agent']}")
         
-        # Adicionar estado atual
         if self.conversation_state["pizza_in_consideration"]:
             pizza_info = self.conversation_state["pizza_in_consideration"]
             context_parts.append(f"\n[CONTEXTO IMPORTANTE] Pizza em consideração: {pizza_info['sabor']} {pizza_info['tamanho']} com borda {pizza_info['borda']} por R$ {pizza_info['preco']}")
@@ -166,7 +141,6 @@ class BeautyPizzaAgent:
         if self.conversation_state["client_name"]:
             context_parts.append(f"[CONTEXTO] Cliente: {self.conversation_state['client_name']}")
         
-        # Adicionar mensagem atual
         context_parts.append(f"\n[MENSAGEM ATUAL] {message}")
         
         return "\n".join(context_parts)
@@ -174,30 +148,7 @@ class BeautyPizzaAgent:
     def _extract_context_from_response(self, user_message: str, agent_response: str):
         """Extrai informações importantes da resposta para manter contexto."""
         user_lower = user_message.lower()
-        response_lower = agent_response.lower()
         
-        # Detectar se uma pizza foi oferecida com preço
-        if "r$" in response_lower and ("pizza" in response_lower or "margherita" in response_lower):
-            # Extrair informações da pizza oferecida
-            import re
-            price_match = re.search(r'r\$\s*(\d+[,.]?\d*)', response_lower)
-            if price_match:
-                price_str = price_match.group(1).replace(',', '.')
-                try:
-                    price = float(price_str)
-                    # Se mencionou margherita, média, cheddar
-                    if "margherita" in response_lower and "média" in response_lower and "cheddar" in response_lower:
-                        self.conversation_state["pizza_in_consideration"] = {
-                            "sabor": "Margherita",
-                            "tamanho": "Média",
-                            "borda": "Recheada com Cheddar",
-                            "preco": price
-                        }
-                        self.conversation_state["current_step"] = "pizza_offered"
-                except ValueError:
-                    pass
-        
-        # Detectar confirmação de interesse
         if any(word in user_lower for word in ["quero", "vou querer", "sim", "ok", "fazer pedido"]):
             if self.conversation_state["pizza_in_consideration"]:
                 self.conversation_state["current_step"] = "confirming_order"
@@ -214,51 +165,3 @@ class BeautyPizzaAgent:
             "current_step": "greeting"
         }
     
-    def get_conversation_history(self) -> List[Dict]:
-        """Retorna o histórico da conversa."""
-        return self.conversation_state["conversation_history"]
-    
-    def update_client_info(self, name: str = None, document: str = None):
-        """Atualiza informações do cliente no estado."""
-        if name:
-            self.conversation_state["client_name"] = name
-        if document:
-            self.conversation_state["client_document"] = document
-    
-    def set_current_order(self, order_id: int):
-        """Define o ID do pedido atual."""
-        self.conversation_state["current_order_id"] = order_id
-
-    def set_pizza_in_consideration(self, sabor: str, tamanho: str, borda: str, preco: float):
-        """Define uma pizza que o cliente está considerando."""
-        self.conversation_state["pizza_in_consideration"] = {
-            "sabor": sabor,
-            "tamanho": tamanho,
-            "borda": borda,
-            "preco": preco
-        }
-        self.conversation_state["current_step"] = "pizza_offered"
-
-    def get_pizza_in_consideration(self):
-        """Retorna a pizza que o cliente está considerando."""
-        return self.conversation_state.get("pizza_in_consideration")
-    
-    def clear_pizza_in_consideration(self):
-        """Limpa a pizza em consideração."""
-        self.conversation_state["pizza_in_consideration"] = None
-    
-    def get_conversation_context_summary(self) -> str:
-        """Retorna um resumo do contexto atual da conversa."""
-        context = []
-        
-        if self.conversation_state.get("pizza_in_consideration"):
-            pizza = self.conversation_state["pizza_in_consideration"]
-            context.append(f"Pizza em consideração: {pizza['sabor']} {pizza['tamanho']} com borda {pizza['borda']} - R$ {pizza['preco']}")
-        
-        if self.conversation_state.get("current_order_id"):
-            context.append(f"Pedido ativo: #{self.conversation_state['current_order_id']}")
-            
-        if self.conversation_state.get("client_name"):
-            context.append(f"Cliente: {self.conversation_state['client_name']}")
-        
-        return " | ".join(context) if context else "Nenhum contexto especial"
