@@ -1,0 +1,47 @@
+[tool.poetry]
+name = 'beauty-pizza-chatbot'
+version = '0.1.0'
+description = 'Chatbot da pizzaria Beauty Pizza usando Agno que se comunica com a Order API'
+
+[tool.poetry.dependencies]
+python = '^3.12'
+python-dotenv = '^1.1.1'
+agno = '1.7.7'
+openai = '^1.98.0'
+pydantic = '^2.11.7'
+requests = '^2.32.4'
+
+[tool.poetry.group.dev.dependencies]
+pytest = '^8.2.0'
+ipython = '^9.0.2'
+mypy = '^1.11.1'
+pytest-asyncio = '^1.0.0'
+pytest-cov = '^6.0.0'
+ruff = '^0.12.4'
+
+[tool.ruff]
+line-length = 79
+target-version = 'py312'
+exclude = [
+    '.bzr',
+    '.direnv',
+    '.eggs',
+    '.git',
+    '.hg',
+    '.mypy_cache',
+    '.nox',
+    '.pants.d',
+    '.pytype',
+    '.ruff_cache',
+    '.venv',
+    'build',
+    'dist',
+    'venv',
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "C90", "I", "N", "UP", "YTT", "S", "BLE", "FBT", "B", "A", "COM", "C4", "DTZ", "T10", "EM", "EXE", "FA", "ISC", "ICN", "G", "INP", "PIE", "T20", "PYI", "PT", "Q", "RSE", "RET", "SLF", "SLOT", "SIM", "TID", "TCH", "INT", "ARG", "PTH", "TD", "FIX", "ERA", "PD", "PGH", "PL", "TRY", "FLY", "NPY", "AIR", "PERF", "FURB", "LOG", "RUF"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
