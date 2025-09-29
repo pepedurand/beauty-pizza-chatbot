@@ -86,7 +86,7 @@ def get_pizza_info(sabor: str) -> Dict:
     name="create_order",
     description="Cria um novo pedido para o cliente. Se já existir um pedido em andamento, retorna o pedido existente."
 )
-def create_order(client_name: str, client_document: str, delivery_date: str = None, delivery_address: str = None) -> Dict:
+def create_order(client_name: str, client_document: str, delivery_date: str = None) -> Dict:
     try:
         today_str = date.today().strftime('%Y-%m-%d')
 
@@ -109,7 +109,7 @@ def create_order(client_name: str, client_document: str, delivery_date: str = No
             except (ValueError, TypeError):
                 delivery_date = today_str
                 
-        new_order = order_api.create_order(client_name, client_document, delivery_date, delivery_address)
+        new_order = order_api.create_order(client_name, client_document, delivery_date)
         new_order['status_beauty'] = 'created'
         return new_order
     except Exception as e:
