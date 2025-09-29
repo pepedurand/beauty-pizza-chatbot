@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 def setup_database():
-    sql_script_path = Path(__file__).parent.parent.parent / 'candidates-case-order-api' / 'knowledge_base' / 'knowledge_base.sql'
+    sql_script_path = Path(__file__).parent.parent.parent / 'candidates-case-order-api' / 'db.sqlite3'
     
     if not sql_script_path.exists():
         print(f"❌ Script SQL não encontrado em: {sql_script_path}")

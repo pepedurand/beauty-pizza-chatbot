@@ -30,12 +30,15 @@ class OrderAPI:
             raise requests.RequestException(f"Erro na requisição para {url}: {e}")
     
     def create_order(self, client_name: str, client_document: str, 
-                    delivery_date: str) -> Dict:
+                    delivery_date: str, delivery_address: str = None) -> Dict:
         data = {
             'client_name': client_name,
             'client_document': client_document,
-            'delivery_date': delivery_date
+            'delivery_date': delivery_date,
         }
+        if delivery_address:
+            data['delivery_address'] = delivery_address
+            
         return self._make_request('POST', '/api/orders/', data)
     
     def get_order(self, order_id: int) -> Dict:
