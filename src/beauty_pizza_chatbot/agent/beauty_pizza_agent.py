@@ -123,7 +123,7 @@ class BeautyPizzaAgent:
         history = self.conversation_state["conversation_history"]
         if history:
             context_parts.append("\n[HISTÓRICO DA CONVERSA]")
-            recent_history = history[-3:] if len(history) > 3 else history
+            recent_history = history[-5:] if len(history) > 5 else history
             for h in recent_history:
                 context_parts.append(f"Cliente: {h['user']}")
                 context_parts.append(f"Bella: {h['agent']}")

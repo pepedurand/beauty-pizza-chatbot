@@ -30,6 +30,7 @@ def main():
     try:
         print("🤖 Inicializando agente Bella...")
         agent = BeautyPizzaAgent(openai_api_key)
+        agent.reset_conversation()
         print("✅ Agente inicializado com sucesso!")
         print("\nBella está pronta para atender! Digite 'sair' para encerrar.\n")
         
