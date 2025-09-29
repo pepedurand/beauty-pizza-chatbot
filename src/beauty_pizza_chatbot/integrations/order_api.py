@@ -100,13 +100,13 @@ class OrderAPI:
         Returns:
             Dados do item adicionado
         """
-        data = {
+        item_data = {
             'pizza_flavor': pizza_flavor,
             'size': size,
             'crust': crust,
             'quantity': quantity
         }
-        return self._make_request('POST', f'/api/orders/{order_id}/items/', data)
+        return self._make_request('POST', f'/api/orders/{order_id}/items/', item_data)
     
     def get_order_total(self, order_id: int) -> Dict:
         """
@@ -118,7 +118,9 @@ class OrderAPI:
         Returns:
             Informações do total do pedido
         """
-        return self._make_request('GET', f'/api/orders/{order_id}/total/')
+        # Não há endpoint específico para total, precisaremos buscar o pedido completo
+        order = self._make_request('GET', f'/api/orders/{order_id}/')
+        return {"total": order.get("total_price", "0.00")}
     
     def update_delivery_address(self, order_id: int, street_name: str, 
                                number: str, complement: str = None, 
@@ -147,7 +149,7 @@ class OrderAPI:
             address_data['reference_point'] = reference_point
         
         data = {'delivery_address': address_data}
-        return self._make_request('PATCH', f'/api/orders/{order_id}/address/', data)
+        return self._make_request('PATCH', f'/api/orders/{order_id}/update-address/', data)
     
     def get_order_items(self, order_id: int) -> List[Dict]:
         """
@@ -159,8 +161,9 @@ class OrderAPI:
         Returns:
             Lista de itens do pedido
         """
-        response = self._make_request('GET', f'/api/orders/{order_id}/items/')
-        return response.get('items', [])
+        # Não há endpoint específico para listar itens, precisaremos buscar o pedido completo
+        order = self._make_request('GET', f'/api/orders/{order_id}/')
+        return order.get('items', [])
     
     def delete_order_item(self, order_id: int, item_id: int) -> Dict:
         """
@@ -189,4 +192,6 @@ class OrderAPI:
             Dados do item atualizado
         """
         data = {'quantity': quantity}
-        return self._make_request('PUT', f'/api/orders/{order_id}/items/{item_id}/', data)
+        # Não há endpoint específico para atualizar item individual
+        # Seria necessário implementar via atualização do pedido completo
+        return {"erro": "Endpoint de atualização de item individual não disponível na API"}

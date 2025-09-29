@@ -1,6 +1,7 @@
 from textwrap import dedent
 from agno.tools import tool
 from typing import List, Dict, Optional
+from datetime import datetime, date
 from beauty_pizza_chatbot.integrations import OrderAPI, KnowledgeBase
 
 
@@ -90,11 +91,23 @@ def get_pizza_info(sabor: str) -> Dict:
 
 @tool_register(
     name="create_order",
-    description="Cria um novo pedido para o cliente com nome, documento e data de entrega"
+    description="Cria um novo pedido para o cliente com nome, documento. A data de entrega será automaticamente definida para hoje se não especificada."
 )
-def create_order(client_name: str, client_document: str, delivery_date: str) -> Dict:
+def create_order(client_name: str, client_document: str, delivery_date: str = None) -> Dict:
     """Cria um novo pedido."""
     try:
+        # Se não foi fornecida data ou a data é muito antiga, usar data atual
+        if not delivery_date:
+            delivery_date = date.today().strftime('%Y-%m-%d')
+        else:
+            # Validar se a data não está no passado
+            try:
+                parsed_date = datetime.strptime(delivery_date, '%Y-%m-%d').date()
+                if parsed_date < date.today():
+                    delivery_date = date.today().strftime('%Y-%m-%d')
+            except ValueError:
+                delivery_date = date.today().strftime('%Y-%m-%d')
+                
         return order_api.create_order(client_name, client_document, delivery_date)
     except Exception as e:
         return {"erro": f"Não foi possível criar o pedido: {str(e)}"}
@@ -196,3 +209,26 @@ def update_item_quantity(order_id: int, item_id: int, quantity: int) -> Dict:
         return order_api.update_order_item(order_id, item_id, quantity)
     except Exception as e:
         return {"erro": f"Não foi possível atualizar quantidade do item: {str(e)}"}
+
+
+@tool_register(
+    name="remember_pizza_offered",
+    description="Registra uma pizza que foi oferecida ao cliente com preço, para manter contexto da conversa"
+)
+def remember_pizza_offered(sabor: str, tamanho: str, borda: str, preco: float) -> Dict:
+    """Registra uma pizza oferecida para manter contexto."""
+    try:
+        # Esta é uma ferramenta de contexto - não faz nada externamente
+        # Apenas confirma que a informação foi registrada
+        return {
+            "status": "registrado",
+            "pizza": {
+                "sabor": sabor,
+                "tamanho": tamanho,
+                "borda": borda,
+                "preco": preco
+            },
+            "mensagem": f"Pizza {sabor} {tamanho} com borda {borda} por R$ {preco} registrada como oferecida ao cliente"
+        }
+    except Exception as e:
+        return {"erro": f"Erro ao registrar pizza oferecida: {str(e)}"}
