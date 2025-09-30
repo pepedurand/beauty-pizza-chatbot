@@ -1,7 +1,7 @@
 from agno.tools import tool
 from typing import List, Dict
 from datetime import datetime, date
-from beauty_pizza_chatbot.integrations import OrderAPI, KnowledgeBase
+from src.integrations import OrderAPI, KnowledgeBase
 
 
 TOOLS_REGISTRY = {}

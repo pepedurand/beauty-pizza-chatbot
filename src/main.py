@@ -12,7 +12,7 @@ if env_path.exists():
 else:
     load_dotenv()  
 
-from beauty_pizza_chatbot import BeautyPizzaAgent
+from src import BeautyPizzaAgent
 
 
 def main():
