@@ -67,11 +67,8 @@ class BeautyPizzaAgent:
             })
             self._extract_context_from_response(message, response.content)
 
-            # Só chama a API de finalizar pedido se todos os dados estiverem presentes
             if self._is_ready_to_finalize():
                 print("[Bella] Todos os dados coletados. Pronta para finalizar o pedido.")
-                # Aqui pode-se acionar a lógica de chamada da API de pedidos
-                # Exemplo: self._finalize_order()
             return response.content
         except Exception as e:
             error_msg = f"Desculpe, ocorreu um erro inesperado. Tente novamente. (Erro: {str(e)})"
@@ -106,7 +103,6 @@ class BeautyPizzaAgent:
 
     def _extract_context_from_response(self, user_message: str, agent_response: str):
         user_lower = user_message.lower()
-        # Exemplo simples: se o usuário confirma interesse e há pizza em consideração, adiciona ao pedido
         if any(word in user_lower for word in ["quero", "vou querer", "sim", "ok", "fazer pedido"]):
             if self.conversation_state["pizza_in_consideration"]:
                 self.conversation_state["pizzas"].append(self.conversation_state["pizza_in_consideration"])
