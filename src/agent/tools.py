@@ -1,7 +1,7 @@
 from agno.tools import tool
 from typing import List, Dict
 from datetime import datetime, date
-from src.integrations import OrderAPI, KnowledgeBase
+from integrations import OrderAPI, KnowledgeBase
 
 
 TOOLS_REGISTRY = {}
@@ -37,16 +37,18 @@ order_api = OrderAPI()
 )
 def get_menu() -> Dict:
     try:
+        print("[Bella] Buscando informações do cardápio no banco de dados...")
         pizzas = knowledge_base.get_all_pizzas()
         sizes = knowledge_base.get_sizes()
         crusts = knowledge_base.get_crusts()
-        
+        print("[Bella] Cardápio recuperado com sucesso.")
         return {
             "pizzas": pizzas,
             "tamanhos": sizes,
             "bordas": crusts
         }
     except Exception as e:
+        print(f"[Bella] Erro ao buscar cardápio: {e}")
         return {"erro": f"Não foi possível obter o cardápio: {str(e)}"}
 
 
@@ -56,14 +58,14 @@ def get_menu() -> Dict:
 )
 def get_pizza_info(sabor: str) -> Dict:
     try:
+        print(f"[Bella] Buscando informações da pizza '{sabor}' no banco de dados...")
         pizza = knowledge_base.get_pizza_by_flavor(sabor)
         if not pizza:
+            print(f"[Bella] Pizza '{sabor}' não encontrada.")
             return {"erro": f"Pizza com sabor '{sabor}' não encontrada no cardápio"}
-        
         sizes = knowledge_base.get_sizes()
         crusts = knowledge_base.get_crusts()
         precos = []
-        
         for size in sizes:
             for crust in crusts:
                 preco = knowledge_base.get_price(pizza['id'], size['id'], crust['id'])
@@ -73,12 +75,13 @@ def get_pizza_info(sabor: str) -> Dict:
                         "borda": crust['tipo'],
                         "preco": preco
                     })
-        
+        print(f"[Bella] Informações da pizza '{sabor}' recuperadas.")
         return {
             "pizza": pizza,
             "precos": precos
         }
     except Exception as e:
+        print(f"[Bella] Erro ao buscar informações da pizza: {e}")
         return {"erro": f"Erro ao buscar informações da pizza: {str(e)}"}
 
 
@@ -88,8 +91,8 @@ def get_pizza_info(sabor: str) -> Dict:
 )
 def create_order(client_name: str, client_document: str, delivery_date: str = None) -> Dict:
     try:
+        print("[Bella] Chamando a API de pedidos para criar um novo pedido...")
         today_str = date.today().strftime('%Y-%m-%d')
-
         safe_delivery_date = today_str
         if delivery_date:
             try:

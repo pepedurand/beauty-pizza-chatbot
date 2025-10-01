@@ -7,15 +7,11 @@ from pathlib import Path
 class KnowledgeBase:
     
     def __init__(self, db_path: Optional[str] = None):
-        if db_path is None:
-            db_path = os.getenv('SQLITE_DB_PATH', 
-                              '../candidates-case-order-api/knowledge_base/knowledge_base.sql')
-        
-        if not os.path.isabs(db_path):
-            current_dir = Path(__file__).parent.parent.parent.parent
-            db_path = current_dir / db_path
-        
-        self.db_path = str(db_path)
+        # Sempre usa o caminho do banco definido na variável de ambiente
+        db_path = db_path or os.getenv('SQLITE_DB_PATH')
+        if not db_path or not os.path.isabs(db_path):
+            raise ValueError("Caminho do banco de dados não definido corretamente na variável de ambiente SQLITE_DB_PATH.")
+        self.db_path = db_path
         self._init_database()
     
     def _init_database(self):

@@ -107,21 +107,19 @@ class BeautyPizzaAgent:
     
     def chat(self, message: str) -> str:
         try:
+            print("[Bella] Interpretando mensagem do usuário...")
             full_context = self._build_full_context(message)
-            
             response = self.agent.run(full_context)
-            
+            print("[Bella] Resposta gerada e contexto atualizado.")
             self.conversation_state["conversation_history"].append({
                 "user": message,
                 "agent": response.content
             })
-            
             self._extract_context_from_response(message, response.content)
-            
             return response.content
-            
         except Exception as e:
             error_msg = f"Desculpe, ocorreu um erro inesperado. Tente novamente. (Erro: {str(e)})"
+            print(f"[Bella] Erro ao interpretar mensagem: {e}")
             return error_msg
     
     def _build_full_context(self, message: str) -> str:

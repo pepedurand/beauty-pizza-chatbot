@@ -12,7 +12,7 @@ if env_path.exists():
 else:
     load_dotenv()  
 
-from src import BeautyPizzaAgent
+from agent import BeautyPizzaAgent
 
 
 def main():
