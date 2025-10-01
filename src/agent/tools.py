@@ -87,7 +87,7 @@ def get_pizza_info(sabor: str) -> Dict:
 
 @tool_register(
     name="create_order",
-    description="Cria um novo pedido para o cliente. Se já existir um pedido em andamento, retorna o pedido existente."
+    description="Cria um novo pedido para o cliente após confirmação explícita. Retorna o código do pedido criado. IMPORTANTE: Informe ao cliente o código do pedido no formato 'Pedido #XXXXX criado com sucesso!'"
 )
 def create_order(client_name: str, client_document: str, delivery_date: str = None) -> Dict:
     try:
@@ -109,10 +109,14 @@ def create_order(client_name: str, client_document: str, delivery_date: str = No
             status = order_api.get_status_order(latest_order['id'])
             if status.get('status') != 'finalizado':
                 latest_order['status_beauty'] = 'existing'
+                order_id = latest_order.get('id')
+                latest_order['mensagem_pedido'] = f"🎉 Pedido #{order_id} recuperado! Informe este código ao cliente."
                 return latest_order
 
         new_order = order_api.create_order(client_name, client_document, safe_delivery_date)
         new_order['status_beauty'] = 'created'
+        order_id = new_order.get('id')
+        new_order['mensagem_pedido'] = f"🎉 Pedido #{order_id} criado com sucesso! Informe este código ao cliente."
         return new_order
     except Exception as e:
         return {"erro": f"Não foi possível criar ou verificar o pedido: {str(e)}"}

@@ -32,11 +32,14 @@ class BeautyPizzaAgent:
         - nome e documento
         - endereço de entrega
         
-        Quando todas essas informações estiverem completas, confirme com o cliente e só então finalize o pedido usando a ferramenta create_order.
+        IMPORTANTE: Quando todas as informações estiverem completas:
+        1. PRIMEIRO mostre um resumo completo do pedido
+        2. PERGUNTE se o cliente confirma
+        3. SÓ ENTÃO use create_order após confirmação explícita (sim/confirmo/ok/etc)
         
         REGRAS IMPORTANTES:
         - Seja simpática e natural
-        - Mantenha o contexto da conversa
+        - NUNCA chame create_order sem confirmação explícita do cliente
         - Nunca finalize ou crie pedido se faltar alguma dessas informações
         - Valide sabores/tamanhos/bordas antes de adicionar pizzas
         - Ao preencher complement ou reference_point na entrega, se não houver valor, envie string vazia ('')
@@ -46,7 +49,9 @@ class BeautyPizzaAgent:
             model=self.model,
             tools=resolve_tools(self.available_tools),
             instructions=self.system_prompt,
-            show_tool_calls=False
+            show_tool_calls=False,
+            add_history_to_messages=True,  
+            num_history_responses=5,  
         )
         
         self.conversation_state = {
@@ -54,28 +59,20 @@ class BeautyPizzaAgent:
             "client_name": None,
             "client_document": None,
             "delivery_address": None,
-            "conversation_history": [],
-            "current_order_id": None,
-            "pizza_in_consideration": None
+            "awaiting_confirmation": False
         }
     
     def chat(self, message: str) -> str:
-     
         try:
             print("[Bella] Processando mensagem...")
             
-            full_context = self._build_full_context(message)
+            enriched_message = self._enrich_with_business_context(message)
             
-            response = self.agent.run(full_context)
+            response = self.agent.run(enriched_message)
             
-            self.conversation_state["conversation_history"].append({
-                "user": message,
-                "agent": response.content
-            })
-            
-            
-            if self._is_ready_to_finalize():
-                print("[Bella] ✅ Todos os dados coletados. Pronta para finalizar!")
+            if self._is_ready_to_finalize() and not self.conversation_state["awaiting_confirmation"]:
+                self.conversation_state["awaiting_confirmation"] = True
+                print("[Bella] ✅ Todos os dados coletados. Aguardando confirmação...")
             
             return response.content
             
@@ -83,33 +80,30 @@ class BeautyPizzaAgent:
             print(f"[Erro] {e}")
             return f"Desculpe, ocorreu um erro. Pode repetir por favor? (Erro: {str(e)})"
     
-    def _build_full_context(self, message: str) -> str:
+    def _enrich_with_business_context(self, message: str) -> str:
+        """Adiciona apenas contexto de negócio relevante à mensagem"""
         context_parts = []
         
-        history = self.conversation_state["conversation_history"]
-        if history:
-            context_parts.append("\n[HISTÓRICO DA CONVERSA]")
-            recent_history = history[-5:] if len(history) > 5 else history
-            for h in recent_history:
-                context_parts.append(f"Cliente: {h['user']}")
-                context_parts.append(f"Bella: {h['agent']}")
-        
-        if self.conversation_state["pizza_in_consideration"]:
-            pizza_info = self.conversation_state["pizza_in_consideration"]
-            context_parts.append(f"\n[CONTEXTO] Pizza em consideração: {pizza_info}")
-        
         if self.conversation_state["pizzas"]:
-            context_parts.append(f"[CONTEXTO] Pizzas no pedido: {self.conversation_state['pizzas']}")
+            context_parts.append(f"[PEDIDO] {len(self.conversation_state['pizzas'])} pizza(s) no carrinho")
+        
         if self.conversation_state["client_name"]:
-            context_parts.append(f"[CONTEXTO] Nome: {self.conversation_state['client_name']}")
+            context_parts.append(f"[CLIENTE] Nome: {self.conversation_state['client_name']}")
+        
         if self.conversation_state["client_document"]:
-            context_parts.append(f"[CONTEXTO] Documento: {self.conversation_state['client_document']}")
+            context_parts.append(f"[CLIENTE] Documento: {self.conversation_state['client_document']}")
+        
         if self.conversation_state["delivery_address"]:
-            context_parts.append(f"[CONTEXTO] Endereço: {self.conversation_state['delivery_address']}")
+            context_parts.append(f"[ENTREGA] Endereço cadastrado")
         
-        context_parts.append(f"\n[MENSAGEM ATUAL] {message}")
+        if self.conversation_state["awaiting_confirmation"]:
+            context_parts.append("[STATUS] AGUARDANDO CONFIRMAÇÃO - Só crie o pedido se o cliente confirmar explicitamente!")
+        elif self._is_ready_to_finalize():
+            context_parts.append("[STATUS] Todas informações coletadas - Mostre resumo e PEÇA CONFIRMAÇÃO antes de criar pedido")
         
-        return "\n".join(context_parts)
+        if context_parts:
+            return f"{' | '.join(context_parts)}\n\n{message}"
+        return message
     
     
     def _is_ready_to_finalize(self) -> bool:
@@ -126,9 +120,7 @@ class BeautyPizzaAgent:
             "client_name": None,
             "client_document": None,
             "delivery_address": None,
-            "conversation_history": [],
-            "current_order_id": None,
-            "pizza_in_consideration": None
+            "awaiting_confirmation": False
         }
         
         print("[Bella] Conversa reiniciada!")
