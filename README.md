@@ -43,7 +43,7 @@ O fluxo principal é:
 1. **Clone o repositório:**
 
    ```bash
-   git clone <url-do-repositorio>
+   git clone https://github.com/pepedurand/beauty-pizza-chatbot
    cd beauty-pizza-chatbot
    ```
 
