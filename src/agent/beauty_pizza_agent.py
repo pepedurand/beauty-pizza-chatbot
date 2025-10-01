@@ -31,11 +31,15 @@ class BeautyPizzaAgent:
         - pizzas desejadas
         - nome e documento
         - endereço de entrega
+        
         Quando todas essas informações estiverem completas, confirme com o cliente e só então finalize o pedido usando a ferramenta create_order.
-        Sempre use linguagem simpática, natural e mantenha o contexto da conversa.
-        Nunca finalize ou crie pedido se faltar alguma dessas informações.
-        Valide sabores/tamanhos/bordas antes de adicionar pizzas.
-        IMPORTANTE: Sempre que for preencher os campos complement ou reference_point na entrega, se não houver valor, envie uma string vazia (''). Nunca envie None ou deixe de enviar esses campos.
+        
+        REGRAS IMPORTANTES:
+        - Seja simpática e natural
+        - Mantenha o contexto da conversa
+        - Nunca finalize ou crie pedido se faltar alguma dessas informações
+        - Valide sabores/tamanhos/bordas antes de adicionar pizzas
+        - Ao preencher complement ou reference_point na entrega, se não houver valor, envie string vazia ('')
         """)
         
         self.agent = Agent(
@@ -56,27 +60,32 @@ class BeautyPizzaAgent:
         }
     
     def chat(self, message: str) -> str:
+     
         try:
-            print("[Bella] Interpretando mensagem do usuário...")
+            print("[Bella] Processando mensagem...")
+            
             full_context = self._build_full_context(message)
+            
             response = self.agent.run(full_context)
-            print("[Bella] Resposta gerada e contexto atualizado.")
+            
             self.conversation_state["conversation_history"].append({
                 "user": message,
                 "agent": response.content
             })
-            self._extract_context_from_response(message, response.content)
-
+            
+            
             if self._is_ready_to_finalize():
-                print("[Bella] Todos os dados coletados. Pronta para finalizar o pedido.")
+                print("[Bella] ✅ Todos os dados coletados. Pronta para finalizar!")
+            
             return response.content
+            
         except Exception as e:
-            error_msg = f"Desculpe, ocorreu um erro inesperado. Tente novamente. (Erro: {str(e)})"
-            print(f"[Bella] Erro ao interpretar mensagem: {e}")
-            return error_msg
+            print(f"[Erro] {e}")
+            return f"Desculpe, ocorreu um erro. Pode repetir por favor? (Erro: {str(e)})"
     
     def _build_full_context(self, message: str) -> str:
         context_parts = []
+        
         history = self.conversation_state["conversation_history"]
         if history:
             context_parts.append("\n[HISTÓRICO DA CONVERSA]")
@@ -84,11 +93,11 @@ class BeautyPizzaAgent:
             for h in recent_history:
                 context_parts.append(f"Cliente: {h['user']}")
                 context_parts.append(f"Bella: {h['agent']}")
-
+        
         if self.conversation_state["pizza_in_consideration"]:
             pizza_info = self.conversation_state["pizza_in_consideration"]
-            context_parts.append(f"\n[CONTEXTO IMPORTANTE] Pizza em consideração: {pizza_info}")
-
+            context_parts.append(f"\n[CONTEXTO] Pizza em consideração: {pizza_info}")
+        
         if self.conversation_state["pizzas"]:
             context_parts.append(f"[CONTEXTO] Pizzas no pedido: {self.conversation_state['pizzas']}")
         if self.conversation_state["client_name"]:
@@ -97,18 +106,13 @@ class BeautyPizzaAgent:
             context_parts.append(f"[CONTEXTO] Documento: {self.conversation_state['client_document']}")
         if self.conversation_state["delivery_address"]:
             context_parts.append(f"[CONTEXTO] Endereço: {self.conversation_state['delivery_address']}")
-
+        
         context_parts.append(f"\n[MENSAGEM ATUAL] {message}")
+        
         return "\n".join(context_parts)
-
-    def _extract_context_from_response(self, user_message: str, agent_response: str):
-        user_lower = user_message.lower()
-        if any(word in user_lower for word in ["quero", "vou querer", "sim", "ok", "fazer pedido"]):
-            if self.conversation_state["pizza_in_consideration"]:
-                self.conversation_state["pizzas"].append(self.conversation_state["pizza_in_consideration"])
-                self.conversation_state["pizza_in_consideration"] = None
-
-    def _is_ready_to_finalize(self):
+    
+    
+    def _is_ready_to_finalize(self) -> bool:
         return (
             self.conversation_state["pizzas"]
             and self.conversation_state["client_name"]
@@ -126,4 +130,5 @@ class BeautyPizzaAgent:
             "current_order_id": None,
             "pizza_in_consideration": None
         }
-
+        
+        print("[Bella] Conversa reiniciada!")
