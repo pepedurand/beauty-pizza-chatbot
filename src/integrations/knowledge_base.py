@@ -1,18 +1,40 @@
 import sqlite3
 import os
 from typing import List, Dict, Optional
-from pathlib import Path
+from difflib import SequenceMatcher
 
 
 class KnowledgeBase:
     
     def __init__(self, db_path: Optional[str] = None):
-        # Sempre usa o caminho do banco definido na variável de ambiente
         db_path = db_path or os.getenv('SQLITE_DB_PATH')
         if not db_path or not os.path.isabs(db_path):
             raise ValueError("Caminho do banco de dados não definido corretamente na variável de ambiente SQLITE_DB_PATH.")
         self.db_path = db_path
         self._init_database()
+    
+    def _find_best_match(self, search_term: str, candidates: List[Dict], 
+                         key_field: str, threshold: float = 0.7, 
+                         context: str = "") -> Optional[Dict]:
+       
+        best_match = None
+        best_ratio = 0.0
+        
+        for candidate in candidates:
+            candidate_value = str(candidate[key_field]).lower()
+            search_lower = search_term.lower()
+            
+            ratio = SequenceMatcher(None, search_lower, candidate_value).ratio()
+            
+            if ratio > best_ratio and ratio >= threshold:
+                best_ratio = ratio
+                best_match = candidate
+        
+        if best_match and best_ratio < 1.0:  
+            match_value = best_match[key_field]
+            print(f"[KnowledgeBase] Match aproximado ({context}): '{search_term}' → '{match_value}' ({best_ratio:.0%})")
+        
+        return best_match
     
     def _init_database(self):
         db_dir = os.path.dirname(self.db_path)
@@ -59,21 +81,47 @@ class KnowledgeBase:
         cursor.execute("""
             SELECT id, sabor, descricao, ingredientes 
             FROM pizzas 
-            WHERE LOWER(sabor) LIKE LOWER(?) 
+            WHERE LOWER(sabor) = LOWER(?)
             LIMIT 1
-        """, (f'%{sabor}%',))
+        """, (sabor,))
         
         row = cursor.fetchone()
+        
+        if not row:
+            cursor.execute("""
+                SELECT id, sabor, descricao, ingredientes 
+                FROM pizzas
+            """)
+            
+            all_pizzas = [
+                {
+                    'id': r[0],
+                    'sabor': r[1],
+                    'descricao': r[2],
+                    'ingredientes': r[3]
+                }
+                for r in cursor.fetchall()
+            ]
+            
+            best_match = self._find_best_match(
+                search_term=sabor,
+                candidates=all_pizzas,
+                key_field='sabor',
+                threshold=0.7,
+                context='sabor'
+            )
+            
+            conn.close()
+            return best_match
+        
         conn.close()
         
-        if row:
-            return {
-                'id': row[0],
-                'sabor': row[1],
-                'descricao': row[2],
-                'ingredientes': row[3]
-            }
-        return None
+        return {
+            'id': row[0],
+            'sabor': row[1],
+            'descricao': row[2],
+            'ingredientes': row[3]
+        }
     
     def get_sizes(self) -> List[Dict]:
         conn = sqlite3.connect(self.db_path)
@@ -123,38 +171,44 @@ class KnowledgeBase:
         return result[0] if result else None
     
     def get_pizza_with_price(self, sabor: str, tamanho: str, borda: str) -> Optional[Dict]:
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
+        pizza = self.get_pizza_by_flavor(sabor)
+        if not pizza:
+            return None
         
-        cursor.execute("""
-            SELECT 
-                p.id, p.sabor, p.descricao, p.ingredientes,
-                t.id, t.tamanho,
-                b.id, b.tipo,
-                pr.preco
-            FROM pizzas p
-            JOIN precos pr ON p.id = pr.pizza_id
-            JOIN tamanhos t ON pr.tamanho_id = t.id
-            JOIN bordas b ON pr.borda_id = b.id
-            WHERE LOWER(p.sabor) LIKE LOWER(?)
-                AND LOWER(t.tamanho) LIKE LOWER(?)
-                AND LOWER(b.tipo) LIKE LOWER(?)
-            LIMIT 1
-        """, (f'%{sabor}%', f'%{tamanho}%', f'%{borda}%'))
+        sizes = self.get_sizes()
+        crusts = self.get_crusts()
         
-        row = cursor.fetchone()
-        conn.close()
+        best_size = self._find_best_match(
+            search_term=tamanho,
+            candidates=sizes,
+            key_field='tamanho',
+            threshold=0.7,
+            context='tamanho'
+        )
         
-        if row:
+        best_crust = self._find_best_match(
+            search_term=borda,
+            candidates=crusts,
+            key_field='tipo',
+            threshold=0.6,
+            context='borda'
+        )
+        
+        if not best_size or not best_crust:
+            return None
+        
+        preco = self.get_price(pizza['id'], best_size['id'], best_crust['id'])
+        
+        if preco:
             return {
-                'pizza_id': row[0],
-                'sabor': row[1],
-                'descricao': row[2],
-                'ingredientes': row[3],
-                'tamanho_id': row[4],
-                'tamanho': row[5],
-                'borda_id': row[6],
-                'borda': row[7],
-                'preco': row[8]
+                'pizza_id': pizza['id'],
+                'sabor': pizza['sabor'],
+                'descricao': pizza['descricao'],
+                'ingredientes': pizza['ingredientes'],
+                'tamanho_id': best_size['id'],
+                'tamanho': best_size['tamanho'],
+                'borda_id': best_crust['id'],
+                'borda': best_crust['tipo'],
+                'preco': preco
             }
         return None

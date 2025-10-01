@@ -82,31 +82,18 @@ class OrderAPI:
             address_data['complement'] = complement
         if reference_point:
             address_data['reference_point'] = reference_point
+        if number:
+            address_data['number'] = number
+        if street_name:
+            address_data['street_name'] = street_name
         
         data = {'delivery_address': address_data}
         return self._make_request('PATCH', f'/api/orders/{order_id}/update-address/', data)
     
     def get_order_items(self, order_id: int) -> List[Dict]:
-
         order = self._make_request('GET', f'/api/orders/{order_id}/')
         return order.get('items', [])
     
     def delete_order_item(self, order_id: int, item_id: int) -> Dict:
         return self._make_request('DELETE', f'/api/orders/{order_id}/items/{item_id}/')
     
-    def filter_orders_by_document(self, client_document: str, delivery_date: str = None) -> List[Dict]:
-        params = {'client_document': client_document}
-        if delivery_date:
-            params['delivery_date'] = delivery_date
-        
-        query_string = '&'.join([f"{k}={v}" for k, v in params.items()])
-        endpoint = f'/api/orders/filter/?{query_string}'
-        
-        try:
-            return self._make_request('GET', endpoint)
-        except Exception as e:
-            return {"erro": f"Não foi possível filtrar pedidos: {str(e)}"}
-    
-    def get_status_order(self, order_id: int) -> Dict:
-        order = self._make_request('GET', f'/api/orders/{order_id}/')
-        return {"status": order.get("status", "não encontrado")}

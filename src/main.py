@@ -61,6 +61,7 @@ def main():
                 print()
                 
             except KeyboardInterrupt:
+                agent.reset_conversation()
                 print("\n\nBella: Até logo! Obrigada por visitar a Beauty Pizza! 🍕")
                 break
 
