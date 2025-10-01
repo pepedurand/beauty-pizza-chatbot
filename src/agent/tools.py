@@ -224,27 +224,3 @@ def remember_pizza_offered(sabor: str, tamanho: str, borda: str, preco: float) -
         return {"erro": f"Erro ao registrar pizza oferecida: {str(e)}"}
 
 
-@tool_register(
-    name="finalize_order",
-    description="Finaliza o pedido do cliente, confirmando todos os detalhes e marcando o pedido como concluído."
-)
-def finalize_order(order_id: int, client_name: str, client_document: str, delivery_address: str, total: float) -> Dict:
-    try:
-        order_details = order_api.get_order(order_id)
-        if not order_details:
-            return {"erro": f"Pedido com ID {order_id} não encontrado para finalização."}
-
-        confirmation_message = (
-            f"Pedido para {client_name} (documento: {client_document}) finalizado com sucesso! "
-            f"Endereço de entrega: {delivery_address}. "
-            f"Total: R$ {total:.2f}. "
-            "Seu pedido logo sairá para entrega. Agradecemos a preferência!"
-        )
-        
-        return {
-            "status": "finalizado",
-            "order_id": order_id,
-            "mensagem": confirmation_message
-        }
-    except Exception as e:
-        return {"erro": f"Ocorreu um erro ao tentar finalizar o pedido: {str(e)}"}
